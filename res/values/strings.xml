@@ -10,13 +10,16 @@
         - SpeedProd\n
         - afterlifesol\n
         - AKiniyalocts\n
+        - maximeh\n
+        - cedricje\n
+        - gtbX
     </string>
 
     <string-array name="scaleMode">
         <item>None</item>
         <item>Height</item>
         <item>Width</item>
-        <item>Auto</item>
+        <item>Auto</item>>
     </string-array>
     <string-array name="scaleMode_v">
         <item>0</item>
@@ -25,6 +28,16 @@
         <item>3</item>
     </string-array>
 
+    <string-array name="screenOrientation">
+        <item>Use device settings</item>
+        <item>Lock to portrait</item>
+        <item>Lock to landscape</item>
+    </string-array>
+    <string-array name="screenOrientation_v">
+        <item>0</item>
+        <item>1</item>
+        <item>2</item>
+    </string-array>
     <string-array name="libraryFilter">
         <item>View All</item>
         <item>View By Series</item>
@@ -38,16 +51,5 @@
         <item>2</item>
         <item>3</item>
         <item>4</item>
-    </string-array>
-    
-    <string-array name="BgSelection">
-        <item>Solid Black</item>
-        <item>Opaque Black</item>
-        <item>Copy Wallpaper</item>
-    </string-array>
-    <string-array name="BgSelection_v">
-        <item>0</item>
-        <item>1</item>
-        <item>2</item>
     </string-array>
 </resources>

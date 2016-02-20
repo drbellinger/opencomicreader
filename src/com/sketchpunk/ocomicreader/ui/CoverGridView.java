@@ -1,4 +1,4 @@
-package com.sketchpunk.ocomicreader.ui;
+package com.sketchpunk.ocomicreader.ui; 
 
 import sage.adapter.SqlCursorAdapter;
 import sage.data.SqlCursorLoader;
@@ -22,6 +22,7 @@ import android.os.Environment;
 import android.preference.PreferenceManager;
 import android.support.v4.content.Loader;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.ContextMenu;
 import android.view.MenuItem;
 import android.view.View;
@@ -43,7 +44,7 @@ public class CoverGridView extends GridView implements
 		,LoadImageView.OnImageLoadedListener{
 	
 	public interface iCallback{ void onDataRefreshComplete(); }
-	
+	private final String TAG = "COVERGRIDVIEW";
 	private SqlCursorAdapter mAdapter;
 	private Sqlite mDb;
 		
@@ -51,9 +52,10 @@ public class CoverGridView extends GridView implements
 	private int mFilterMode = 0;
 	private String mSeriesFilter = "";
 	
-	private int mThumbHeight = 180;
-	private int mThumbPadding = 60;
-	private int mGridPadding = 60;
+	private int mTopPadding = 130; //TODO: get the proper bar height to make this work.
+	private int mThumbHeight = 600;
+	private int mThumbPadding = 0;
+	private int mGridPadding = 0;
 	private int mGridColNum = 2;
 
 	private boolean mIsFirstRun = true;
@@ -67,10 +69,10 @@ public class CoverGridView extends GridView implements
 		//Get Preferences
 		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this.getContext());
 		try{
-			this.mGridColNum =		prefs.getInt("libraryColCnt",2);
-			this.mGridPadding =		prefs.getInt("libraryPadding",60);
-			this.mThumbPadding =	prefs.getInt("libraryCoverPad",60);
-			this.mThumbHeight =		prefs.getInt("libraryCoverHeight",180);
+			this.mGridColNum =		prefs.getInt("libColCnt",2);
+			this.mGridPadding =		prefs.getInt("libPadding",0);
+			this.mThumbPadding =	prefs.getInt("libCoverPad",3);
+			this.mThumbHeight =		prefs.getInt("libCoverHeight",800);
 		}catch(Exception e){
 			System.err.println("Error Loading Library Prefs " + e.getMessage());
 		}//try
@@ -84,7 +86,7 @@ public class CoverGridView extends GridView implements
         mAdapter.setCallback(this);
         
         this.setNumColumns(mGridColNum);
-        this.setPadding(mGridPadding,mGridPadding+40,mGridPadding,mGridPadding);
+        this.setPadding(mGridPadding,mGridPadding+mTopPadding,mGridPadding,mGridPadding);
         this.setHorizontalSpacing(mThumbPadding);
         this.setVerticalSpacing(mThumbPadding);
         this.setAdapter(mAdapter);
@@ -113,7 +115,7 @@ public class CoverGridView extends GridView implements
 	
 	/*========================================================
 	misc*/
-	public boolean isSeriesFiltered(){ return (mFilterMode == 1); }
+	public boolean isSeriesFiltered(){ return (mFilterMode == 1); } //TODO. Do I need this?
 	
 	@Override //ComicCover.onClick
 	public void onItemClick(AdapterView<?> parent, View view, int position, long id){
@@ -125,6 +127,10 @@ public class CoverGridView extends GridView implements
 		}else{ //Open comic in viewer.
 			Intent intent = new Intent(this.getContext(),ViewActivity.class);
 			intent.putExtra("comicid",itmRef.id);
+			intent.putExtra("comicpos",itmRef.pos);
+			intent.putExtra("filtermode",mFilterMode);
+			intent.putExtra("seriesname", mSeriesFilter);
+			
 			((FragmentActivity)this.getContext()).startActivityForResult(intent,0);
 		}//if
 	}//func
@@ -147,6 +153,7 @@ public class CoverGridView extends GridView implements
 	    
    	@Override
    	public Loader<Cursor> onCreateLoader(int id, Bundle arg){
+   		/*TODO REMOVE THIS
        	String sql = "";
 
        	if(isSeriesFiltered()){//Filter by series
@@ -164,7 +171,11 @@ public class CoverGridView extends GridView implements
        		}//switch
        		sql += " ORDER BY title";
        	}//if
+       	*/
+       
        	//............................................
+       	String sql = ComicLibrary.getListSql(mFilterMode,mSeriesFilter,-1);
+       	
        	SqlCursorLoader cursorLoader = new SqlCursorLoader(this.getContext(),mDb);
        	cursorLoader.setRaw(sql);
        	return cursorLoader;
@@ -188,24 +199,24 @@ public class CoverGridView extends GridView implements
 	/*========================================================
    	Adapter Events*/
    	public class AdapterItemRef{
-       	public String id;
+       	public String id = "";
        	public TextView lblTitle;
        	public ImageView imgCover;
        	public ProgressCircle pcProgress;
        	public Bitmap bitmap = null;
        	public String series = "";
+       	public int pos = 0;
    	}//cls
    	
    	@Override
    	public View onCreateListItem(View v){
-       	try{
+       	try{       		
        		AdapterItemRef itmRef = new AdapterItemRef();
        		itmRef.lblTitle = (TextView)v.findViewById(R.id.lblTitle);
        		itmRef.pcProgress = (ProgressCircle)v.findViewById(R.id.pcProgress);
        		itmRef.imgCover = (ImageView)v.findViewById(R.id.imgCover);
        		itmRef.imgCover.setTag(itmRef);
        		itmRef.imgCover.getLayoutParams().height = mThumbHeight;
-
        		v.setTag(itmRef);
        	}catch(Exception e){
        		System.out.println("onCreateListItem " + e.getMessage());
@@ -217,21 +228,36 @@ public class CoverGridView extends GridView implements
    	public void onBindListItem(View v,Cursor c){
    		try{
    			AdapterItemRef itmRef = (AdapterItemRef)v.getTag();
+   			itmRef.pos = c.getPosition();
+   			int cntIssues = 1;
    			
    			//..............................................
-   			String tmp = c.getString(mAdapter.getColIndex("title"));
+   			String id = c.getString(mAdapter.getColIndex("_id"))
+   				,tmp = c.getString(mAdapter.getColIndex("title"));
+   			
+   			//Grid view binds more then one time, limit double loading to save on resources used to load images.
+   			//Need to change ID to uniqueness, but also check title because there is a small bind issue going back/forth between series view
+   			if(itmRef.id.equals(tmp) && itmRef.lblTitle.getText().equals(tmp)){ System.out.println("Repeat"); return; }
+   			itmRef.id = id;
+
    			if(isSeriesFiltered() && mSeriesFilter.isEmpty()){
    				itmRef.series = tmp;
-   				tmp += " ("+c.getString(mAdapter.getColIndex("cntIssue"))+")";
+   				cntIssues = Integer.parseInt(c.getString(mAdapter.getColIndex("cntIssue")));
+   				tmp += " ("+Integer.toString(cntIssues)+")";
    			}else itmRef.series = "";
    			itmRef.lblTitle.setText(tmp);
-   			
-   			itmRef.id = c.getString(mAdapter.getColIndex("_id"));
 
    			//..............................................
    			//load Cover Image
    			if(c.getString(mAdapter.getColIndex("isCoverExists")).equals("1")){
    				LoadImageView.loadImage(mThumbPath + itmRef.id + ".jpg",itmRef.imgCover,this);
+   			}else{
+   				//No image, clear out images TODO put a default image for missing covers.
+   				itmRef.imgCover.setImageBitmap(null);
+   				if(itmRef.bitmap != null){
+   					itmRef.bitmap.recycle();
+   					itmRef.bitmap = null;
+   				}//if
    			}//if
    			
    			//..............................................
@@ -240,6 +266,7 @@ public class CoverGridView extends GridView implements
    			int pTotal = c.getInt(mAdapter.getColIndex("pgCount"));
    			if(pTotal > 0){
    				float pRead = c.getFloat(mAdapter.getColIndex("pgRead"));
+   				if(pRead > 0) pRead += cntIssues; //Page index start at 0, so if the user has already passed the first page, Add Issue countb  to it to be able to get 100%, else leave it so it can get 0%
    				progress = (pRead / ((float)pTotal));
    			}//if
    			

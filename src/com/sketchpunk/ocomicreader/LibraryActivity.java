@@ -68,10 +68,13 @@ public class LibraryActivity extends FragmentActivity
 		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
         //....................................
 		//setup background
+		RelativeLayout mLayouts = (RelativeLayout) findViewById(R.id.MainLayout);
+		mLayouts.setBackgroundColor(Color.parseColor("#FF000000"));
+		
+		/*
 		switch(Integer.parseInt(prefs.getString("libraryBackground","0"))){
 			case 0: //Solid
-				RelativeLayout mLayouts = (RelativeLayout) findViewById(R.id.MainLayout);
-				mLayouts.setBackgroundColor(Color.parseColor("#FF000000"));
+				
 			break;
 			case 1: //opaque 
 				RelativeLayout mLayouto = (RelativeLayout) findViewById(R.id.MainLayout);
@@ -85,10 +88,10 @@ public class LibraryActivity extends FragmentActivity
 				getWindow().setBackgroundDrawable(wallpaperDrawable);
 			break;
 		}//switch
-
+		*/
 		//....................................
-		mBtnSync = (Button)findViewById(R.id.btnSync);
-		mBtnSync.setOnClickListener(this);
+		//mBtnSync = (Button)findViewById(R.id.btnSync);
+		//mBtnSync.setOnClickListener(this);
 		mBtnMenu = (Button)findViewById(R.id.btnMenu);
 		mBtnMenu.setOnClickListener(this);
 		
@@ -113,6 +116,7 @@ public class LibraryActivity extends FragmentActivity
         mSpFilter.setSelection(mGridView.getFilterMode());
         
         //....................................
+        //int barHeight = ((RelativeLayout)findViewById(R.id.topBar)).getHeight();
         mGridView.init();
         registerForContextMenu(mGridView); //Route event from Activity to View
 	}//func
@@ -169,6 +173,13 @@ public class LibraryActivity extends FragmentActivity
 	     	case R.id.menu_about:
 	     		sage.ui.Dialogs.About(this,this.getText(R.string.app_about));
 	     		break;
+	     	
+	     	//................................................
+	     	case R.id.menu_sync:
+		 		sage.ui.Dialogs.ConfirmBox(this,"Sync Library","Are you sure you want sync the library?",new DialogInterface.OnClickListener(){
+					public void onClick(DialogInterface dialog,int id){startSync();}
+				});
+	     		break;
 		}//switch
 		return true;
 	}//func
@@ -204,12 +215,16 @@ public class LibraryActivity extends FragmentActivity
 	@Override
 	public void onClick(View v){
 		 switch(v.getId()){
+		 
+		 /*
 		 	case R.id.btnSync: 
 		 		sage.ui.Dialogs.ConfirmBox(this,"Sync Library","Are you sure you want sync the library?",new DialogInterface.OnClickListener(){
 					public void onClick(DialogInterface dialog,int id){startSync();}
 				});
 		 		
 		 		break;
+		 		
+		 */
 		 	case R.id.btnMenu: 
 		 		//openOptionsMenu();
 		 		PopupMenu popup = new PopupMenu(this, v);

@@ -194,7 +194,7 @@ public class LibrarySync implements Runnable{
     	if(stack.size() == 0) return ComicLibrary.STATUS_NOSETTINGS;
 
     	//............................................
-    	SQLiteStatement sql = mDb.compileStatement("INSERT INTO ComicLibrary(isCoverExists,pgCount,pgRead,pgCurrent,comicID,title,path,series) VALUES(0,0,0,1,?,?,?,?);");    	
+    	SQLiteStatement sql = mDb.compileStatement("INSERT INTO ComicLibrary(isCoverExists,pgCount,pgRead,pgCurrent,comicID,title,path,series) VALUES(0,0,0,0,?,?,?,?);");    	
     	mDb.beginTransaction();
 
     	while(!stack.isEmpty()){
@@ -290,8 +290,8 @@ public class LibrarySync implements Runnable{
 				//Get Meta Information
 				comicMeta = archive.getMeta(); //Title,Series,Volume,Issue
 				if(comicMeta != null){
-					if(comicMeta[0] != "") sql += ",title = '"+comicMeta[0].replaceAll("'","''")+"'";
-					if(comicMeta[1] != "") sql += ",series = '"+comicMeta[1].replaceAll("'","''")+"'";
+					if(!comicMeta[0].isEmpty()) sql += ",title = '"+comicMeta[0].replaceAll("'","''")+"'";
+					if(!comicMeta[1].isEmpty()) sql += ",series = '"+comicMeta[1].replaceAll("'","''")+"'";
 				}//if}
 
 				//Save information to the db.
